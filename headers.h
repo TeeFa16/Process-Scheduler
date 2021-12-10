@@ -10,16 +10,17 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
+#include <string.h>
 
 typedef short bool;
 #define true 1
-#define false 1
+#define false 0
 
 #define SHKEY 300
 
 
 ///==============================
-//don't mess with this variable//
+//don't mess with this vaSSSriable//
 int * shmaddr;                 //
 //===============================
 
@@ -63,5 +64,34 @@ void destroyClk(bool terminateAll)
     if (terminateAll)
     {
         killpg(getpgrp(), SIGINT);
+    }
+}
+
+// structs
+struct processInputLine 
+{
+    int processID;
+    int processArrTime;
+    int processRunTime;
+    int processPriority;
+};
+
+struct process 
+{
+    char state[20];
+    int id;
+    int arrivalTime;
+    int priority;
+    int runTime;
+    int remainingTime;
+    int waitingTime;
+};
+
+// utilities
+void printList(struct process inputProccesses[], int inputProccessesCount)
+{
+    for(int i=0; i<inputProccessesCount; i++)
+    {
+        printf("\n Proccess '%d, %d, %d, %d'\n", inputProccesses[i].id, inputProccesses[i].arrivalTime, inputProccesses[i].runTime, inputProccesses[i].priority);
     }
 }
