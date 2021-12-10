@@ -57,15 +57,20 @@ int main(int argc, char * argv[])
     const char* CLK_PATH = strcat(clkBuffer, "/clk.out");
     const char* SCHEDULAR_PATH = strcat(schedularBuffer, "/scheduler.out");
     // ask user for input 
-    int algorithmNum=1;
+    int algorithmNum;
     int quantumNum;
-    // printf("\nPlease enter algorithm number: \n");
-    // scanf("%d", &algorithmNum);
-    // if (algorithmNum == 3)
-    // {
-    //     printf("\nPlease enter quantum number: \n");
-    //     scanf("%d", &quantumNum);
-    // }
+    printf("\nPlease enter algorithm number: \n");
+    scanf("%d", &algorithmNum);
+    if (algorithmNum == 3)
+    {
+        printf("\nPlease enter quantum number: \n");
+        scanf("%d", &quantumNum);
+    }
+    if (algorithmNum < 1 || algorithmNum > 5)
+    {
+        printf("\nWrong algorithm number!\n");
+        exit(-1);
+    }
     // waking up clk
     const int CLK_PID = fork();
     if (CLK_PID == -1)
@@ -76,17 +81,21 @@ int main(int argc, char * argv[])
     }
 
     const int SCHEDULAR_PID = fork();
+    char algorithmNumChar[sizeof(int)];
+    sprintf(algorithmNumChar, "%d", algorithmNum);
     if (SCHEDULAR_PID == -1)
         return -1;
     else if (SCHEDULAR_PID == 0)
     {
         if (algorithmNum != 3)
         {
-            execl(SCHEDULAR_PATH, "scheduler.out", NULL);
+            execl(SCHEDULAR_PATH, "scheduler.out", &algorithmNumChar, NULL);
         }
         else
         {
-            execl(SCHEDULAR_PATH, "scheduler.out", '1', '1', NULL);
+            char quantumNumChar[sizeof(int)];
+            sprintf(quantumNumChar, "%d", quantumNum);
+            execl(SCHEDULAR_PATH, "scheduler.out", &algorithmNumChar, &quantumNumChar, NULL);
         }
     }
 

@@ -13,6 +13,9 @@ int main(int argc, char * argv[])
     signal(SIGUSR1, schedularHandler);
     initClk();
 
+    printf("\nScheduled Algorithm recieved (%s)\n", argv[1]);
+    printf("\nScheduled Algorithm recieved Q (%s)\n", argv[2]);
+
     // switch (argv[1])
     // {
     // case 1:
