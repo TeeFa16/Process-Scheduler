@@ -5,15 +5,12 @@ bool stillSending = true;
 
 void schedularHandler(int signum) // THe SIGUSER1 signal handler
 {
-    printf("\nRecieved signal: %d \n", stillSending);
     stillSending = false;
-    printf("\n Recived signal after: %d\n", stillSending);
 }
 
 int main(int argc, char * argv[])
 {
     signal(SIGUSR1, schedularHandler);
-    printf("\n Hello scheduler ID: %d\n", getpid());
     initClk();
 
     // switch (argv[1])
@@ -36,11 +33,9 @@ int main(int argc, char * argv[])
     // }
     
 
-    printf("\nteeeefa gameeeeed\n");
     while(stillSending)
     {
-        // printf("\nteeeefa 3arsssssssss\n");
-        // printf("\n %d\n", stillSending);
+
     }
     printf("\nFinshed Schedular\n");
 

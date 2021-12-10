@@ -55,9 +55,7 @@ int main(int argc, char * argv[])
     char schedularBuffer[500];
     getcwd(schedularBuffer, sizeof(schedularBuffer));
     const char* CLK_PATH = strcat(clkBuffer, "/clk.out");
-    printf("\n clock path is : %s\n", CLK_PATH);
     const char* SCHEDULAR_PATH = strcat(schedularBuffer, "/scheduler.out");
-    printf("\n scheduler path is : %s\n", SCHEDULAR_PATH);
     // ask user for input 
     int algorithmNum=1;
     int quantumNum;
@@ -74,9 +72,7 @@ int main(int argc, char * argv[])
         return -1;
     else if (CLK_PID == 0)
     {
-        printf("\n before clk  run\n");
         execl(CLK_PATH, "clk.out", NULL);
-        printf("\na7aaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n");
     }
 
     const int SCHEDULAR_PID = fork();
@@ -84,16 +80,12 @@ int main(int argc, char * argv[])
         return -1;
     else if (SCHEDULAR_PID == 0)
     {
-        printf("\n before scheduler ID: %d\n", SCHEDULAR_PID);
         if (algorithmNum != 3)
         {
-            printf("\n after algo not 3 schedule run\n");
             execl(SCHEDULAR_PATH, "scheduler.out", NULL);
-            printf("\nerrrrrrrror\n");
         }
         else
         {
-            printf("\n after algo 3 schedule run\n");
             execl(SCHEDULAR_PATH, "scheduler.out", '1', '1', NULL);
         }
     }
@@ -104,32 +96,25 @@ int main(int argc, char * argv[])
     initClk();
     // To get time use this
     int x = getClk();
-    printf("\n current time is %d\n", x);
+    printf("\nCurrent time is %d\n", x);
     // TODO Generation Main Loop
     // 5. Create a data structure for processes and provide it with its parameters.
     // 6. Send the information to the scheduler at the appropriate time.
     // 7. Clear clock resources
     kill(SCHEDULAR_PID, SIGUSR1);
-    printf("\n SCHEDULAR_PID: %d \n", SCHEDULAR_PID);
     int stat_loc;
-    printf("\n Before wait proc_gen\n");
     int sid = wait(&stat_loc);
-    printf("\n After wait proc_gen\n");
     while ((stat_loc & 0x00FF)) // wait until the scheduler exits or is destroyed
     {
-        printf("\nDEBUG\n");
         int sid = wait(&stat_loc);
     };
-    printf("\n finished\n");
-    destroyClk(false);
     kill(CLK_PID, SIGINT);
     destroyClk(true);
 }
 
 void clearResources(int signum)
 {
-    //TODO Clears all resources in case of interruption
-    // FIX: interruptied
-    killpg(getpgrp(), SIGKILL);
+    printf("Clearing resources....\n");
     destroyClk(true);
+    kill(getpid(), SIGKILL);
 }
