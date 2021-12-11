@@ -16,6 +16,8 @@ int main(int argc, char * argv[])
     printf("\nScheduled Algorithm recieved (%s)\n", argv[1]);
     printf("\nScheduled Algorithm recieved Q (%s)\n", argv[2]);
 
+
+
     // switch (argv[1])
     // {
     // case 1:
@@ -35,11 +37,24 @@ int main(int argc, char * argv[])
     //     break;
     // }
     
+    //Creating Receiving Queue
+    key_t keyID;
+    keyID = ftok("keyfile", 90);
+    int receivingQueueID = msgget(keyID, 0666| IPC_CREAT);
 
     while(stillSending)
     {
+        struct msgbuff received;
+        int rec_val = msgrcv(receivingQueueID, &received, sizeof(struct process), 7, IPC_NOWAIT);
 
+        if(rec_val != -1)
+        {
+            printProcess(received.p);
+        }
     }
+
+    //Delete Queue
+    msgctl(receivingQueueID, IPC_RMID, NULL);
     printf("\nFinshed Schedular\n");
 
     

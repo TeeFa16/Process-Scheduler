@@ -87,11 +87,22 @@ struct process
     int waitingTime;
 };
 
+struct msgbuff
+{
+    long mtype;
+    struct process p;
+};
+
 // utilities
 void printList(struct process inputProccesses[], int inputProccessesCount)
 {
     for(int i=0; i<inputProccessesCount; i++)
     {
-        printf("\n Proccess '%d, %d, %d, %d'\n", inputProccesses[i].id, inputProccesses[i].arrivalTime, inputProccesses[i].runTime, inputProccesses[i].priority);
+        printf("\nProccess '%d, %d, %d, %d'\n", inputProccesses[i].id, inputProccesses[i].arrivalTime, inputProccesses[i].runTime, inputProccesses[i].priority);
     }
+}
+
+void printProcess(struct process p)
+{
+    printf("\nID = %d, ArrivalTime = %d, RunningTime = %d, Priority = %d.\n",p.id, p.arrivalTime, p.runTime, p.priority);
 }

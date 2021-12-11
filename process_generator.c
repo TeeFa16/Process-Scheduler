@@ -109,6 +109,41 @@ int main(int argc, char * argv[])
     // TODO Generation Main Loop
     // 5. Create a data structure for processes and provide it with its parameters.
     // 6. Send the information to the scheduler at the appropriate time.
+
+    //Creating Queue
+    key_t keyID;
+    int sendingQueueID;
+    keyID = ftok("keyfile", 90);
+    sendingQueueID = msgget(keyID, 0666| IPC_CREAT);
+    
+
+    //Filling the Queue
+    int fillingCounter = 0;
+    
+    if(sendingQueueID == -1)
+    {
+        perror("\nError in creating Queue...\n");
+        exit(-1);
+    }
+
+    while (fillingCounter != inputProccessesCount)
+    {
+        int currentTime = getClk();
+        //printf("\nCurrentTime = %d", currentTime);
+        if(currentTime >= inputProccesses[fillingCounter].arrivalTime)
+        {
+            struct msgbuff send;
+            send.p = inputProccesses[fillingCounter];
+            send.mtype = 7;
+
+            int send_val = msgsnd(sendingQueueID, &send, sizeof(struct process), !IPC_NOWAIT);
+            
+            if(send_val == -1)
+                perror("\nError in sending...\n");
+            
+            fillingCounter++;
+        }
+    }
     // 7. Clear clock resources
     kill(SCHEDULAR_PID, SIGUSR1);
     int stat_loc;
