@@ -1,8 +1,5 @@
-# 👋 Welcome to MPLL
-Internship graduation 🎓 Project, a website for Misr Public Library in Luxor MPLL
-
-[![python 3.9.6](https://img.shields.io/badge/python-v3.9.6-<COLOR>.svg)](https://shields.io/)
-[![django](https://img.shields.io/badge/django-v3.2.6-1EAEDB.svg)](https://www.djangoproject.com/)
+# 👋 Welcome to CMPN303 Operating Systems Schedular Project
+This is our Project in CMPN303 Operating Systems.
 
 Setting the environment 🛠
 --------------------------
