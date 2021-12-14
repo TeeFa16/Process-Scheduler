@@ -45,8 +45,7 @@ int main(int argc, char * argv[])
     while(stillSending)
     {
         struct msgbuff received;
-        int rec_val = msgrcv(receivingQueueID, &received, sizeof(struct process), 7, IPC_NOWAIT);
-
+        int rec_val = msgrcv(receivingQueueID, &received, sizeof(struct process), 7, !IPC_NOWAIT);
         if(rec_val != -1)
         {
             printProcess(received.p);
