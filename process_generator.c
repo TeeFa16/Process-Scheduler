@@ -1,5 +1,7 @@
 #include "headers.h"
 
+int sendingQueueID;
+
 void clearResources(int);
 
 int main(int argc, char * argv[])
@@ -100,7 +102,7 @@ int main(int argc, char * argv[])
     }
     //Creating Queue <process_gen, scheduler>
     key_t keyID = ftok("keyfile", 90);
-    int sendingQueueID = msgget(keyID, 0666| IPC_CREAT);
+    sendingQueueID = msgget(keyID, 0666| IPC_CREAT);
     //Filling the Queue
     if(sendingQueueID == -1)
     {
@@ -145,6 +147,7 @@ int main(int argc, char * argv[])
 void clearResources(int signum)
 {
     printf("Clearing resources....\n");
+    msgctl(sendingQueueID, IPC_RMID, NULL);
     destroyClk(true);
     kill(getpid(), SIGKILL);
 }
