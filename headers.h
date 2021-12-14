@@ -8,9 +8,11 @@
 #include <sys/msg.h>
 #include <sys/wait.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <signal.h>
 #include <string.h>
+#include <unistd.h>
+#include <time.h>
+
 
 typedef short bool;
 #define true 1
@@ -104,5 +106,5 @@ void printList(struct process inputProccesses[], int inputProccessesCount)
 
 void printProcess(struct process p)
 {
-    printf("\nID = %d, ArrivalTime = %d, RunningTime = %d, Priority = %d.\n",p.id, p.arrivalTime, p.runTime, p.priority);
+    printf("\nCurrentTime:%d, ID = %d, ArrivalTime = %d, RunningTime = %d, Priority = %d.\n", getClk(), p.id, p.arrivalTime, p.runTime, p.priority);
 }

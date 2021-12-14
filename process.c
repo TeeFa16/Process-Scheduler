@@ -1,20 +1,9 @@
 #include "headers.h"
 
-/* Modify this file as needed*/
-int remainingtime;
-
 int main(int agrc, char * argv[])
 {
-    initClk();
-    
-    //TODO it needs to get the remaining time from somewhere
-    //remainingtime = ??;
-    while (remainingtime > 0)
-    {
-        // remainingtime = ??;
-    }
-    
-    destroyClk(false);
-    
+    // printf("\nCurrentTime: %ld\n", clock()/CLOCKS_PER_SEC);
+    while (clock() < atoi(argv[1])*CLOCKS_PER_SEC);
+    // printf("\nFinishTime: %ld\n", clock()/CLOCKS_PER_SEC);
     return 0;
 }
