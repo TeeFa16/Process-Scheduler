@@ -8,7 +8,7 @@ int main(int argc, char * argv[])
     // 1. Read the input files.
     FILE* processesFile;
     char* processesFileName = argv[1];
-    // count rows in file
+    // count processes' rows in file
     int rowCount = 0;
     char c;
     processesFile = fopen(processesFileName, "r");
@@ -49,13 +49,6 @@ int main(int argc, char * argv[])
         c = fgetc(processesFile);
     }
     fclose(processesFile);
-    // start clk and schedular
-    char clkBuffer[500];
-    getcwd(clkBuffer, sizeof(clkBuffer));
-    char schedularBuffer[500];
-    getcwd(schedularBuffer, sizeof(schedularBuffer));
-    const char* CLK_PATH = strcat(clkBuffer, "/clk.out");
-    const char* SCHEDULAR_PATH = strcat(schedularBuffer, "/scheduler.out");
     // ask user for input 
     int algorithmNum;
     int quantumNum;
@@ -71,6 +64,13 @@ int main(int argc, char * argv[])
         printf("\nWrong algorithm number!\n");
         exit(-1);
     }
+    // start clk and schedular
+    char clkBuffer[500];
+    getcwd(clkBuffer, sizeof(clkBuffer));
+    char schedularBuffer[500];
+    getcwd(schedularBuffer, sizeof(schedularBuffer));
+    const char* CLK_PATH = strcat(clkBuffer, "/clk.out");
+    const char* SCHEDULAR_PATH = strcat(schedularBuffer, "/scheduler.out");
     // waking up clk
     const int CLK_PID = fork();
     if (CLK_PID == -1)
@@ -79,7 +79,7 @@ int main(int argc, char * argv[])
     {
         execl(CLK_PATH, "clk.out", NULL);
     }
-
+    // waking up schedular
     const int SCHEDULAR_PID = fork();
     char algorithmNumChar[sizeof(int)];
     sprintf(algorithmNumChar, "%d", algorithmNum);
@@ -98,51 +98,37 @@ int main(int argc, char * argv[])
             execl(SCHEDULAR_PATH, "scheduler.out", &algorithmNumChar, &quantumNumChar, NULL);
         }
     }
-
-    // 2. Ask the user for the chosen scheduling algorithm and its parameters, if there are any.
-    // 3. Initiate and create the scheduler and clock processes.
-    // 4. Use this function after creating the clock process to initialize clock
+    // Use this function after creating the clock process to initialize clock
     initClk();
     // To get time use this
     int x = getClk();
     printf("\nCurrent time is %d\n", x);
-    // TODO Generation Main Loop
-    // 5. Create a data structure for processes and provide it with its parameters.
-    // 6. Send the information to the scheduler at the appropriate time.
-
-    //Creating Queue
-    key_t keyID;
-    int sendingQueueID;
-    keyID = ftok("keyfile", 90);
-    sendingQueueID = msgget(keyID, 0666| IPC_CREAT);
-    
-
+    //Creating Queue <process_gen, scheduler>
+    key_t keyID = ftok("keyfile", 90);
+    int sendingQueueID = msgget(keyID, 0666| IPC_CREAT);
     //Filling the Queue
     int fillingCounter = 0;
-    
     if(sendingQueueID == -1)
     {
         perror("\nError in creating Queue...\n");
         exit(-1);
     }
-
     while (fillingCounter != inputProccessesCount)
     {
         int currentTime = getClk();
-        //printf("\nCurrentTime = %d", currentTime);
-        if(currentTime >= inputProccesses[fillingCounter].arrivalTime)
-        {
-            struct msgbuff send;
-            send.p = inputProccesses[fillingCounter];
-            send.mtype = 7;
-
-            int send_val = msgsnd(sendingQueueID, &send, sizeof(struct process), !IPC_NOWAIT);
-            
-            if(send_val == -1)
-                perror("\nError in sending...\n");
-            
-            fillingCounter++;
-        }
+        int next_arrival_time = inputProccesses[fillingCounter].arrivalTime;
+        int sleep_duration = next_arrival_time-currentTime;
+        sleep(sleep_duration);
+        printf("\nCurrentTime = %d, ArrivalTime = %d, slept for '%d' secs\n", currentTime, next_arrival_time, sleep_duration);
+        // prepare massage buffer
+        struct msgbuff send;
+        send.p = inputProccesses[fillingCounter];
+        send.mtype = 7;
+        // send 
+        int send_val = msgsnd(sendingQueueID, &send, sizeof(struct process), !IPC_NOWAIT);
+        if(send_val == -1)
+            perror("\nError in sending...\n");
+        fillingCounter++;
     }
     // 7. Clear clock resources
     kill(SCHEDULAR_PID, SIGUSR1);
