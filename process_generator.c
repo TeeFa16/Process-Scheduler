@@ -98,28 +98,28 @@ int main(int argc, char * argv[])
             execl(SCHEDULAR_PATH, "scheduler.out", &algorithmNumChar, &quantumNumChar, NULL);
         }
     }
-    // Use this function after creating the clock process to initialize clock
-    initClk();
-    // To get time use this
-    int x = getClk();
-    printf("\nCurrent time is %d\n", x);
     //Creating Queue <process_gen, scheduler>
     key_t keyID = ftok("keyfile", 90);
     int sendingQueueID = msgget(keyID, 0666| IPC_CREAT);
     //Filling the Queue
-    int fillingCounter = 0;
     if(sendingQueueID == -1)
     {
         perror("\nError in creating Queue...\n");
         exit(-1);
     }
+    // Use this function after creating the clock process to initialize clock
+    initClk();
+    // To get time use this
+    int x = getClk();
+    printf("\nCurrent time is %d\n", x);
+    int fillingCounter = 0;
     while (fillingCounter != inputProccessesCount)
     {
         int currentTime = getClk();
         int next_arrival_time = inputProccesses[fillingCounter].arrivalTime;
         int sleep_duration = next_arrival_time-currentTime;
         sleep(sleep_duration);
-        printf("\nCurrentTime = %d, ArrivalTime = %d, slept for '%d' secs\n", currentTime, next_arrival_time, sleep_duration);
+        printf("\nPreviousTime = %d, Now = %d, ArrivalTime = %d, slept for '%d' secs\n", currentTime, getClk(), next_arrival_time, sleep_duration);
         // prepare massage buffer
         struct msgbuff send;
         send.p = inputProccesses[fillingCounter];
