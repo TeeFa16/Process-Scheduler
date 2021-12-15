@@ -20,6 +20,8 @@ typedef short bool;
 
 #define SHKEY 300
 
+#define QUEUE_KEY 90
+
 
 ///==============================
 //don't mess with this vaSSSriable//
@@ -95,6 +97,193 @@ struct msgbuff
     struct process p;
 };
 
+enum queueInsertionKey
+{
+    HPF = 1,
+    SRTN = 2,
+    RR = 3,
+    SJF = 4,
+    FCFS = 5,
+};
+
+//Priority Queue
+struct node
+{
+   struct process* p;
+   struct node *next;
+};
+
+struct node* newNode(struct process* p)
+{
+   struct node* temp = (struct node*)malloc(sizeof(struct node));
+   temp->p = p;
+   temp->next = NULL;
+   return temp;
+}
+
+struct customPriorityQueue
+{
+   struct node *head;
+   int count;
+};
+
+struct customPriorityQueue* newCustomPriorityQueue()
+{
+   struct customPriorityQueue* temp = (struct customPriorityQueue*)malloc((sizeof(struct customPriorityQueue)));
+   (temp->head) = NULL;
+   temp->count = 0;
+   return temp;
+}
+
+int isEmpty(struct customPriorityQueue** q)
+{
+   return (*q)->head == NULL;
+}
+
+struct process* front(struct customPriorityQueue** q)
+{
+   if (isEmpty(q))
+   {
+      struct process* p=NULL;
+      return p;
+   }
+   return ((*q)->head->p);
+}
+
+struct process* dequeue(struct customPriorityQueue** q)
+{
+   if (isEmpty(q))
+   {
+      struct process* p=NULL;
+      return p;
+   }
+   struct node *temp = ((*q)->head);
+   ((*q)->head) = ((*q)->head)->next;
+   struct process* returnedProcess = temp->p;
+   free(temp);
+   return returnedProcess;
+}
+
+void enqueue(struct customPriorityQueue** q, struct process* p, enum queueInsertionKey i)
+{
+    if (isEmpty(q))
+    {
+        struct node *temp = newNode(p);
+        ((*q)->head) = temp;
+        return;
+    }
+    struct node *start = ((*q)->head);
+    struct node *temp = newNode(p);
+
+    switch(i)
+    {
+        case HPF:
+            // enqueue acording to priority
+            if (((*q)->head)->p->priority > p->priority)
+            {
+                temp->next = ((*q)->head);
+                ((*q)->head) = temp;
+            }
+            else
+            {
+                // assuiming same priority will take arrival time
+                while (start->next != NULL && start->next->p->priority <= p->priority)
+                {
+                    start = start->next;
+                }
+                temp->next = start->next;
+                start->next = temp;
+            }
+            break;
+
+        case SRTN:
+            // enqueue acording to remainingTime
+            if (((*q)->head)->p->remainingTime > p->remainingTime)
+            {
+                temp->next = ((*q)->head);
+                ((*q)->head) = temp;
+            }
+            else
+            {
+                while (start->next != NULL && start->next->p->remainingTime <= p->remainingTime)
+                {
+                    start = start->next;
+                }
+                temp->next = start->next;
+                start->next = temp;
+            }
+            break;
+
+        case RR:
+            // FIX: enqueue Last
+            if (((*q)->head)->p->priority > p->priority)
+            {
+                temp->next = ((*q)->head);
+                ((*q)->head) = temp;
+            }
+            else
+            {
+                while (start->next != NULL && start->next->p->priority <= p->priority)
+                {
+                    start = start->next;
+                }
+                temp->next = start->next;
+                start->next = temp;
+            }
+            break;
+
+        case SJF:
+            // enqueue acording to runTime
+            if (((*q)->head)->p->runTime > p->runTime)
+            {
+                temp->next = ((*q)->head);
+                ((*q)->head) = temp;
+            }
+            else
+            {
+                while (start->next != NULL && start->next->p->runTime <= p->runTime)
+                {
+                    start = start->next;
+                }
+                temp->next = start->next;
+                start->next = temp;
+            }
+            break;
+
+        case FCFS:
+            // enqueue (last) acording to arrivalTime
+            if (((*q)->head)->p->priority > p->priority)
+            {
+                temp->next = ((*q)->head);
+                ((*q)->head) = temp;
+            }
+            else
+            {
+                while (start->next != NULL && start->next->p->priority <= p->priority)
+                {
+                    start = start->next;
+                }
+
+                temp->next = start->next;
+                start->next = temp;
+            }
+            break;
+    }
+}
+
+void incrementWaintingTime(struct customPriorityQueue** q)
+{
+    if (isEmpty(q))
+        return;
+    struct node* temp = ((*q)->head);
+    temp->p->waitingTime++;
+    while (temp->next != NULL)
+    {
+        temp->next->p->waitingTime++;
+        temp = temp->next;
+    }
+}
+
 // utilities
 void printList(struct process inputProccesses[], int inputProccessesCount)
 {
@@ -107,4 +296,17 @@ void printList(struct process inputProccesses[], int inputProccessesCount)
 void printProcess(struct process p)
 {
     printf("\nCurrentTime:%d, ID = %d, ArrivalTime = %d, RunningTime = %d, Priority = %d.\n", getClk(), p.id, p.arrivalTime, p.runTime, p.priority);
+}
+
+void printQueue(struct customPriorityQueue** q)
+{
+    if (isEmpty(q))
+        return;
+    struct node* start = ((*q)->head);
+    printProcess(*(start->p));
+    while (start->next != NULL)
+    {
+        printProcess(*(start->next->p));
+        start = start->next;
+    }
 }
