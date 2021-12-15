@@ -66,7 +66,7 @@ int main(int argc, char * argv[])
         printf("\nWrong algorithm number!\n");
         exit(-1);
     }
-    // start clk and schedular
+    // prepare paths for clk and schedular
     char clkBuffer[500];
     getcwd(clkBuffer, sizeof(clkBuffer));
     char schedularBuffer[500];
@@ -101,7 +101,7 @@ int main(int argc, char * argv[])
         }
     }
     //Creating Queue <process_gen, scheduler>
-    key_t keyID = ftok("keyfile", 90);
+    key_t keyID = ftok("keyfile", QUEUE_KEY);
     sendingQueueID = msgget(keyID, 0666| IPC_CREAT);
     //Filling the Queue
     if(sendingQueueID == -1)
