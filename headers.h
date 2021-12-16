@@ -82,8 +82,9 @@ struct processInputLine
 
 struct process 
 {
-    char state[20];
     int id;
+    int pID;
+    char state[20];
     int arrivalTime;
     int priority;
     int runTime;
