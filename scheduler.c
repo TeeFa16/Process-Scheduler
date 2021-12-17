@@ -7,11 +7,13 @@
 // TWO:
 
 
+
 struct customPriorityQueue* CPQptr = NULL;
 struct process* runningProcessPTR = NULL;
 bool stillSending = true;
 const char* PROCESS_PATH = NULL;
 struct process runningProcess;
+int startedProcessingTime = 0;
 
 void printDEBUG(struct process* p)
 {
@@ -49,6 +51,8 @@ void sigChildHandler(int signum)
     //FIX FOR SRTN
     printDEBUG(runningProcessPTR);
     strcpy(runningProcessPTR->state, "finished");
+    printf("\nstartedProcessingTime SIGCHILDHANDLER = %d\n", startedProcessingTime);
+    runningProcessPTR->remainingTime = runningProcessPTR->remainingTime - (getClk()-startedProcessingTime);
     // TODO: store for analytics
     // Print to LOG file
     printDEBUG(runningProcessPTR);
@@ -70,13 +74,28 @@ void sigChildHandler(int signum)
     }
     // TODO:
     // Print to LOG file 
+    startedProcessingTime = getClk();
+    printf("\nEND SIGCHILDHANDLER = %d\n", getClk());
     printDEBUG(runningProcessPTR);
 }
+
 
 int main(int argc, char * argv[])
 {
     signal(SIGUSR1, schedularHandler);
-    signal(SIGCHLD, sigChildHandler);
+    // signal(SIGCHLD, sigChildHandler);
+    //FIX
+    struct sigaction act;
+    act.sa_handler = sigChildHandler;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = SA_NOCLDSTOP;
+
+    if (sigaction(SIGCHLD, &act, 0) == -1)
+    {
+        perror("sigaction");
+        exit(1);
+    }
+
     initClk();
     enum queueInsertionKey insertionFactor = atoi(argv[1]);
     // DEBUG: Remove me
@@ -112,6 +131,7 @@ int main(int argc, char * argv[])
     {
         if(!stillSending)
         {
+            printf("\nEND SENDING clk=%d \n", getClk());
             sleep(1);
         }
         else 
@@ -144,6 +164,9 @@ int main(int argc, char * argv[])
                     runningProcessPTR = &runningProcess;
                     strcpy(runningProcessPTR->state, "started");
                     runningProcessPTR->pID = wakeProccess(runningProcessPTR->runTime);
+                    startedProcessingTime = getClk();
+                    printf("\nstartedProcessingTime AT NULL= %d\n", startedProcessingTime);
+
                     // TODO:
                     // Print to LOG file
                     printf("\nRunning First Process\n");
@@ -154,13 +177,21 @@ int main(int argc, char * argv[])
                 {
                     printf("\nNOT NULLL\n");
                     // SRTN Case
+                    //Update Current Running Process remaining time
+                    if(insertionFactor==SRTN)
+                    {
+                        runningProcessPTR->remainingTime = runningProcessPTR->remainingTime - (getClk()-startedProcessingTime);
+                        startedProcessingTime = getClk();
+                    }
                     if(insertionFactor==SRTN && runningProcessPTR->remainingTime>receivedProcess.remainingTime)
                     {
+                        printf("\nREMAINING TIME OF RUNNINIGPROCESS PTR = %d\n", runningProcessPTR->remainingTime);
                         printf("\nNO SRTN\n");
                         // TODO: replace runningProcess with receivedProcess
                         // [1]: stop runningProcess
                         strcpy(runningProcessPTR->state, "stopped");
                         kill(runningProcessPTR->pID, SIGSTOP);
+                        runningProcessPTR->remainingTime = runningProcessPTR->remainingTime - (getClk()-startedProcessingTime);
                         // FIX: 5azo2
                         enqueue(&CPQptr, *runningProcessPTR, insertionFactor);
                         // [2]: Print to LogFile
@@ -171,6 +202,8 @@ int main(int argc, char * argv[])
                         strcpy(runningProcessPTR->state, "started");
                         // [4]: wakeProccess(int runTime, const char* PROCESS_PATH)
                         runningProcessPTR->pID = wakeProccess(runningProcessPTR->runTime);
+                        startedProcessingTime = getClk();
+                        printf("\nstartedProcessingTime at !NULL = %d\n", startedProcessingTime);
                         // [5]: Print to LogFile
                         printDEBUG(runningProcessPTR);
                     }
