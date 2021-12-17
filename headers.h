@@ -111,20 +111,29 @@ enum queueInsertionKey
 struct node
 {
    struct process* p;
-   struct node *next;
+   struct node* next;
 };
 
-struct node* newNode(struct process* p)
+struct node* newNode(struct process pObj)
 {
-   struct node* temp = (struct node*)malloc(sizeof(struct node));
-   temp->p = p;
-   temp->next = NULL;
-   return temp;
+    struct node* temp = (struct node*)malloc(sizeof(struct node));
+    
+    struct process* newProcess = (struct process*)malloc(sizeof(struct process));
+    strcpy(newProcess->state, pObj.state);
+    newProcess->id = pObj.id;
+    newProcess->arrivalTime = pObj.arrivalTime;
+    newProcess->runTime = pObj.runTime;
+    newProcess->priority = pObj.priority;
+    newProcess->remainingTime = pObj.remainingTime;
+    
+    temp->p = newProcess;
+    temp->next = NULL;
+    return temp;
 }
 
 struct customPriorityQueue
 {
-   struct node *head;
+   struct node* head;
    int count;
 };
 
@@ -153,121 +162,138 @@ struct process* front(struct customPriorityQueue** q)
 
 struct process* dequeue(struct customPriorityQueue** q)
 {
-   if (isEmpty(q))
-   {
-      struct process* p=NULL;
-      return p;
-   }
-   struct node *temp = ((*q)->head);
-   ((*q)->head) = ((*q)->head)->next;
-   struct process* returnedProcess = temp->p;
-   free(temp);
-   return returnedProcess;
-}
-
-void enqueue(struct customPriorityQueue** q, struct process* p, enum queueInsertionKey i)
-{
     if (isEmpty(q))
     {
-        struct node *temp = newNode(p);
+        struct process* p=NULL;
+        return p;
+    }
+    struct node *temp = ((*q)->head);
+    ((*q)->head) = ((*q)->head)->next;
+    struct process* returnedProcess = temp->p; 
+    free(temp);
+    (*q)->count--;
+    return returnedProcess;
+}
+
+void printProcess(struct process* p)
+{
+   printf("id is: %d\n", p->id);
+   printf("arrival times is: %d\n", p->arrivalTime);
+   printf("runTime is: %d\n", p->runTime);
+   printf("prioriry is: %d\n", p->priority);
+   printf("state is: %s\n", p->state);
+   printf("remaining time is: %d\n", p->remainingTime);
+//    printf("Waiting time is: %d\n\n", p->WaitingTime);
+}
+
+void enqueue(struct customPriorityQueue **q, struct process pObj, enum queueInsertionKey i)
+{
+    printf("\nINSIDE\n");
+    printProcess(&pObj);
+    if(isEmpty(q))
+    {
+        struct node* temp = newNode(pObj);
+        printf("\nNEW NODE FIRST\n");
+        printProcess(temp->p);
         ((*q)->head) = temp;
+        (*q)->count++;
         return;
     }
-    struct node *start = ((*q)->head);
-    struct node *temp = newNode(p);
-
+    struct node* start = ((*q)->head);
+    struct node* temp = newNode(pObj);
+    printf("\nNEW NODE\n");
+    printProcess(temp->p);
     switch(i)
     {
         case HPF:
-            // enqueue acording to priority
-            if (((*q)->head)->p->priority > p->priority)
+            printf("\nHPF ALGO\n");
+            if (((*q)->head)->p->priority > pObj.priority)
             {
                 temp->next = ((*q)->head);
                 ((*q)->head) = temp;
             }
             else
             {
-                // assuiming same priority will take arrival time
-                while (start->next != NULL && start->next->p->priority <= p->priority)
+                while (start->next != NULL && start->next->p->priority <= pObj.priority)
                 {
                     start = start->next;
                 }
                 temp->next = start->next;
                 start->next = temp;
             }
+            (*q)->count++;
             break;
-
         case SRTN:
-            // enqueue acording to remainingTime
-            if (((*q)->head)->p->remainingTime > p->remainingTime)
+            printf("\nSRTN ALGO\n");
+            if (((*q)->head)->p->remainingTime > pObj.remainingTime)
             {
                 temp->next = ((*q)->head);
                 ((*q)->head) = temp;
             }
             else
             {
-                while (start->next != NULL && start->next->p->remainingTime <= p->remainingTime)
+                while (start->next != NULL && start->next->p->remainingTime <= pObj.remainingTime)
                 {
                     start = start->next;
                 }
                 temp->next = start->next;
                 start->next = temp;
             }
+            (*q)->count++;
             break;
-
         case RR:
-            // FIX: enqueue Last
-            if (((*q)->head)->p->priority > p->priority)
+            printf("\nRR ALGO\n");
+            if (((*q)->head)->p->arrivalTime > pObj.arrivalTime)
             {
                 temp->next = ((*q)->head);
                 ((*q)->head) = temp;
             }
             else
             {
-                while (start->next != NULL && start->next->p->priority <= p->priority)
+                while (start->next != NULL && start->next->p->arrivalTime <= pObj.arrivalTime)
                 {
                     start = start->next;
                 }
                 temp->next = start->next;
                 start->next = temp;
             }
+            (*q)->count++;
             break;
-
         case SJF:
-            // enqueue acording to runTime
-            if (((*q)->head)->p->runTime > p->runTime)
+            printf("\nSJF ALGO\n");
+            if (((*q)->head)->p->runTime > pObj.runTime)
             {
                 temp->next = ((*q)->head);
                 ((*q)->head) = temp;
             }
             else
             {
-                while (start->next != NULL && start->next->p->runTime <= p->runTime)
+                while (start->next != NULL && start->next->p->runTime <= pObj.runTime)
                 {
                     start = start->next;
                 }
                 temp->next = start->next;
                 start->next = temp;
             }
+            (*q)->count++;
             break;
-
         case FCFS:
-            // enqueue (last) acording to arrivalTime
-            if (((*q)->head)->p->priority > p->priority)
+            printf("\nFCFS ALGO\n");
+            if (((*q)->head)->p->arrivalTime > pObj.arrivalTime)
             {
                 temp->next = ((*q)->head);
                 ((*q)->head) = temp;
             }
             else
             {
-                while (start->next != NULL && start->next->p->priority <= p->priority)
+                while (start->next != NULL && start->next->p->arrivalTime <= pObj.arrivalTime)
                 {
                     start = start->next;
                 }
-
                 temp->next = start->next;
                 start->next = temp;
             }
+            (*q)->count++;
             break;
     }
 }
@@ -294,20 +320,21 @@ void printList(struct process inputProccesses[], int inputProccessesCount)
     }
 }
 
-void printProcess(struct process p)
-{
-    printf("\nCurrentTime:%d, ID = %d, ArrivalTime = %d, RunningTime = %d, Priority = %d.\n", getClk(), p.id, p.arrivalTime, p.runTime, p.priority);
-}
 
-void printQueue(struct customPriorityQueue** q)
+void printQueue(struct customPriorityQueue **q)
 {
-    if (isEmpty(q))
-        return;
-    struct node* start = ((*q)->head);
-    printProcess(*(start->p));
-    while (start->next != NULL)
+   if (isEmpty(q))
     {
-        printProcess(*(start->next->p));
-        start = start->next;
+        printf("\nEmpty Queue\n");
+        return;
     }
+   printf("\nStart of the Q, Count: %d\n", (*q)->count);
+   struct node* start = ((*q)->head);
+   printProcess(start->p);
+   while (start->next != NULL)
+   {
+      printProcess(start->next->p);
+      start = start->next;
+   }
+   printf("\nEND of the Q\n");
 }

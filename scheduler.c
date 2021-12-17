@@ -1,13 +1,25 @@
 #include "headers.h"
+//TEST CASES:
+// #id arrival runtime priority
+// 1	4	80	1
+// 2	11	5	3
+// 3	13	5	7
+// TWO:
+
 
 struct customPriorityQueue* CPQptr = NULL;
 struct process* runningProcessPTR = NULL;
 bool stillSending = true;
 const char* PROCESS_PATH = NULL;
+struct process runningProcess;
 
-void printDEBUG(struct process p)
+void printDEBUG(struct process* p)
 {
-    printf("\nAt\ttime\t%d\tprocess\t%d\t%s\tarr\t%d\tpriority\t%d\tremain\t%d\n", getClk(), p.id, p.state, p.arrivalTime, p.priority, p.remainingTime);
+    if(p == NULL)
+    {
+        return;
+    }
+    printf("\nAt\ttime\t%d\tprocess\t%d\t%s\tarr\t%d\tpriority\t%d\tremain\t%d\n", getClk(), p->id, p->state, p->arrivalTime, p->priority, p->remainingTime);
 }
 
 int wakeProccess(int runTime)
@@ -34,13 +46,18 @@ void schedularHandler(int signum)
 
 void sigChildHandler(int signum)
 {
+    //FIX FOR SRTN
+    printDEBUG(runningProcessPTR);
     strcpy(runningProcessPTR->state, "finished");
     // TODO: store for analytics
     // Print to LOG file
-    printDEBUG(*runningProcessPTR);
+    printDEBUG(runningProcessPTR);
     runningProcessPTR = dequeue(&CPQptr);
     if(runningProcessPTR == NULL)
+    {
         return;
+    }
+    runningProcess = *runningProcessPTR;
     if(!strcmp(runningProcessPTR->state, "ready"))
     {
         strcpy(runningProcessPTR->state, "started");
@@ -53,7 +70,7 @@ void sigChildHandler(int signum)
     }
     // TODO:
     // Print to LOG file 
-    printDEBUG(*runningProcessPTR);
+    printDEBUG(runningProcessPTR);
 }
 
 int main(int argc, char * argv[])
@@ -108,6 +125,8 @@ int main(int argc, char * argv[])
                 strcpy(receivedProcess.state, "ready");
                 receivedProcess.waitingTime = 0;
                 receivedProcess.remainingTime = receivedProcess.runTime;
+                printf("\nJust Recieved\n");
+                printDEBUG(&receivedProcess);
                 /*
                     > Now we need to know shall we run, or enqueue receivedProcess
                     ready:    NO proccess.out
@@ -119,40 +138,57 @@ int main(int argc, char * argv[])
                 // RECIEVED::CASE 1
                 if(runningProcessPTR==NULL)
                 {
+                    printf("\nNULLL\n");
                     // TODO: run receivedProcess
-                    runningProcessPTR = &receivedProcess;
-                    printDEBUG(*runningProcessPTR);
+                    runningProcess = receivedProcess;
+                    runningProcessPTR = &runningProcess;
                     strcpy(runningProcessPTR->state, "started");
                     runningProcessPTR->pID = wakeProccess(runningProcessPTR->runTime);
                     // TODO:
-                    // Print to LOG file 
-                    printDEBUG(*runningProcessPTR);
+                    // Print to LOG file
+                    printf("\nRunning First Process\n");
+                    printDEBUG(runningProcessPTR);
                 }
                 // RECIEVED::CASE 2
                 else if(runningProcessPTR!=NULL)
                 {
+                    printf("\nNOT NULLL\n");
                     // SRTN Case
                     if(insertionFactor==SRTN && runningProcessPTR->remainingTime>receivedProcess.remainingTime)
                     {
+                        printf("\nNO SRTN\n");
                         // TODO: replace runningProcess with receivedProcess
                         // [1]: stop runningProcess
                         strcpy(runningProcessPTR->state, "stopped");
                         kill(runningProcessPTR->pID, SIGSTOP);
-                        enqueue(&CPQptr, runningProcessPTR, insertionFactor);
+                        // FIX: 5azo2
+                        enqueue(&CPQptr, *runningProcessPTR, insertionFactor);
                         // [2]: Print to LogFile
-                        printDEBUG(*runningProcessPTR);
+                        printDEBUG(runningProcessPTR);
                         // [3]: receivedProcess->state "started"
-                        runningProcessPTR = &receivedProcess;
+                        runningProcess = receivedProcess;
+                        runningProcessPTR = &runningProcess;
                         strcpy(runningProcessPTR->state, "started");
                         // [4]: wakeProccess(int runTime, const char* PROCESS_PATH)
                         runningProcessPTR->pID = wakeProccess(runningProcessPTR->runTime);
                         // [5]: Print to LogFile
-                        printDEBUG(*runningProcessPTR);
+                        printDEBUG(runningProcessPTR);
                     }
                     else
                     {
                         // Enqueue HPF, SRTN, RR, SJF FCFS Case
-                        enqueue(&CPQptr, &receivedProcess, insertionFactor);
+                        printf("\nENQUEUEING\n");
+                        printQueue(&CPQptr);
+                        printf("\nWhat is going to be enqued\n");
+                        printDEBUG(&receivedProcess);
+                        printf("\nWhat is running\n");
+                        printDEBUG(runningProcessPTR);
+                        struct process toEnqueueProcess = receivedProcess;
+                        printProcess(&toEnqueueProcess);
+                        enqueue(&CPQptr, toEnqueueProcess, insertionFactor);
+                        printf("\nAFTER ENQUIENING\n");
+                        printQueue(&CPQptr);
+                        printProcess(front(&CPQptr));
                     }
                 }
             }
