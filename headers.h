@@ -119,12 +119,14 @@ struct node* newNode(struct process pObj)
     struct node* temp = (struct node*)malloc(sizeof(struct node));
     
     struct process* newProcess = (struct process*)malloc(sizeof(struct process));
-    strcpy(newProcess->state, pObj.state);
     newProcess->id = pObj.id;
+    newProcess->pID = pObj.pID;
+    strcpy(newProcess->state, pObj.state);
     newProcess->arrivalTime = pObj.arrivalTime;
     newProcess->runTime = pObj.runTime;
     newProcess->priority = pObj.priority;
     newProcess->remainingTime = pObj.remainingTime;
+    newProcess->waitingTime = pObj.waitingTime;
     
     temp->p = newProcess;
     temp->next = NULL;
@@ -178,6 +180,7 @@ struct process* dequeue(struct customPriorityQueue** q)
 void printProcess(struct process* p)
 {
    printf("id is: %d\n", p->id);
+   printf("pID is: %d\n", p->pID);
    printf("arrival times is: %d\n", p->arrivalTime);
    printf("runTime is: %d\n", p->runTime);
    printf("prioriry is: %d\n", p->priority);
