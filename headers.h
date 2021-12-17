@@ -90,6 +90,7 @@ struct process
     int runTime;
     int remainingTime;
     int waitingTime;
+    int finishedTime;
 };
 
 struct msgbuff
@@ -186,30 +187,24 @@ void printProcess(struct process* p)
    printf("prioriry is: %d\n", p->priority);
    printf("state is: %s\n", p->state);
    printf("remaining time is: %d\n", p->remainingTime);
-//    printf("Waiting time is: %d\n\n", p->WaitingTime);
+   printf("finish time is: %d\n", p->finishedTime);
+   printf("Waiting time is: %d\n", p->waitingTime);
 }
 
 void enqueue(struct customPriorityQueue **q, struct process pObj, enum queueInsertionKey i)
 {
-    printf("\nINSIDE\n");
-    printProcess(&pObj);
     if(isEmpty(q))
     {
         struct node* temp = newNode(pObj);
-        printf("\nNEW NODE FIRST\n");
-        printProcess(temp->p);
         ((*q)->head) = temp;
         (*q)->count++;
         return;
     }
     struct node* start = ((*q)->head);
     struct node* temp = newNode(pObj);
-    printf("\nNEW NODE\n");
-    printProcess(temp->p);
     switch(i)
     {
         case HPF:
-            printf("\nHPF ALGO\n");
             if (((*q)->head)->p->priority > pObj.priority)
             {
                 temp->next = ((*q)->head);
@@ -227,7 +222,6 @@ void enqueue(struct customPriorityQueue **q, struct process pObj, enum queueInse
             (*q)->count++;
             break;
         case SRTN:
-            printf("\nSRTN ALGO\n");
             if (((*q)->head)->p->remainingTime > pObj.remainingTime)
             {
                 temp->next = ((*q)->head);
@@ -245,7 +239,6 @@ void enqueue(struct customPriorityQueue **q, struct process pObj, enum queueInse
             (*q)->count++;
             break;
         case RR:
-            printf("\nRR ALGO\n");
             if (((*q)->head)->p->arrivalTime > pObj.arrivalTime)
             {
                 temp->next = ((*q)->head);
@@ -263,7 +256,6 @@ void enqueue(struct customPriorityQueue **q, struct process pObj, enum queueInse
             (*q)->count++;
             break;
         case SJF:
-            printf("\nSJF ALGO\n");
             if (((*q)->head)->p->runTime > pObj.runTime)
             {
                 temp->next = ((*q)->head);
@@ -281,7 +273,6 @@ void enqueue(struct customPriorityQueue **q, struct process pObj, enum queueInse
             (*q)->count++;
             break;
         case FCFS:
-            printf("\nFCFS ALGO\n");
             if (((*q)->head)->p->arrivalTime > pObj.arrivalTime)
             {
                 temp->next = ((*q)->head);
@@ -305,12 +296,12 @@ void incrementWaintingTime(struct customPriorityQueue** q)
 {
     if (isEmpty(q))
         return;
-    struct node* temp = ((*q)->head);
-    temp->p->waitingTime++;
-    while (temp->next != NULL)
+    struct node* tempPTR = ((*q)->head);
+    tempPTR->p->waitingTime++;
+    while (tempPTR->next != NULL)
     {
-        temp->next->p->waitingTime++;
-        temp = temp->next;
+        tempPTR->next->p->waitingTime++;
+        tempPTR = tempPTR->next;
     }
 }
 

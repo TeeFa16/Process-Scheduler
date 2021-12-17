@@ -4,7 +4,12 @@
 // 1	4	80	1
 // 2	11	5	3
 // 3	13	5	7
-// TWO:
+// TWO RR:
+// 1	10	50	2
+// 2	30	20	1
+// 3	80	30	0
+// 4	90	25	3
+// 5	100	30	4
 
 enum queueInsertionKey insertionFactor;
 struct customPriorityQueue* CPQptr = NULL;
@@ -14,7 +19,6 @@ const char* PROCESS_PATH = NULL;
 struct process runningProcess;
 int startedProcessingTime = 0;
 int QUANTUM;
-
 
 void printDEBUG(struct process* p)
 {
@@ -49,11 +53,12 @@ void schedularHandler(int signum)
 
 void sigChildHandler(int signum)
 {
-    //FIX FOR SRTN
-    printDEBUG(runningProcessPTR);
     strcpy(runningProcessPTR->state, "finished");
-    printf("\nstartedProcessingTime SIGCHILDHANDLER = %d\n", startedProcessingTime);
     runningProcessPTR->remainingTime = runningProcessPTR->remainingTime - (getClk()-startedProcessingTime);
+    runningProcessPTR->finishedTime = getClk();
+    runningProcessPTR->waitingTime = runningProcessPTR->finishedTime - runningProcessPTR->arrivalTime - runningProcessPTR->runTime;
+    printf("\nFINISHED LOG\n");
+    printProcess(runningProcessPTR);
     // TODO: store for analytics
     // Print to LOG file
     printDEBUG(runningProcessPTR);
@@ -76,7 +81,6 @@ void sigChildHandler(int signum)
     // TODO:
     // Print to LOG file 
     startedProcessingTime = getClk();
-    printf("\nEND SIGCHILDHANDLER = %d\n", getClk());
     printDEBUG(runningProcessPTR);
     if (insertionFactor == RR)
         sleep(QUANTUM);
@@ -86,19 +90,15 @@ void sigChildHandler(int signum)
 int main(int argc, char * argv[])
 {
     signal(SIGUSR1, schedularHandler);
-    // signal(SIGCHLD, sigChildHandler);
-    //FIX
-    struct sigaction act;
-    act.sa_handler = sigChildHandler;
-    sigemptyset(&act.sa_mask);
-    act.sa_flags = SA_NOCLDSTOP;
-
-    if (sigaction(SIGCHLD, &act, 0) == -1)
+    struct sigaction action;
+    action.sa_handler = sigChildHandler;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = SA_NOCLDSTOP;
+    if (sigaction(SIGCHLD, &action, 0) == -1)
     {
         perror("sigaction");
         exit(1);
     }
-
     initClk();
     insertionFactor = atoi(argv[1]);
     // DEBUG: Remove me
@@ -136,7 +136,6 @@ int main(int argc, char * argv[])
     {
         if(!stillSending && insertionFactor != RR)
         {
-            printf("\nEND SENDING clk=%d \n", getClk());
             sleep(1);
         }
         else 
@@ -147,7 +146,6 @@ int main(int argc, char * argv[])
                 rec_val = msgrcv(receivingQueueID, &receivedProccessMSG, sizeof(struct process), 7, IPC_NOWAIT);
             else
             {
-                printf("\nWaiting .............................\n");
                 RRFirstTime = false;
                 rec_val = msgrcv(receivingQueueID, &receivedProccessMSG, sizeof(struct process), 7, !IPC_NOWAIT);
             }
@@ -160,7 +158,6 @@ int main(int argc, char * argv[])
                     receivedProcess.arrivalTime = 0;
                 receivedProcess.waitingTime = 0;
                 receivedProcess.remainingTime = receivedProcess.runTime;
-                printf("\nJust Recieved\n");
                 printDEBUG(&receivedProcess);
                 /*
                     > Now we need to know shall we run, or enqueue receivedProcess
@@ -173,24 +170,19 @@ int main(int argc, char * argv[])
                 // RECIEVED::CASE 1
                 if(runningProcessPTR==NULL)
                 {
-                    printf("\nNULLL\n");
                     // TODO: run receivedProcess
                     runningProcess = receivedProcess;
                     runningProcessPTR = &runningProcess;
                     strcpy(runningProcessPTR->state, "started");
                     runningProcessPTR->pID = wakeProccess(runningProcessPTR->runTime);
                     startedProcessingTime = getClk();
-                    printf("\nstartedProcessingTime AT NULL= %d\n", startedProcessingTime);
 
-                    // TODO:
                     // Print to LOG file
-                    printf("\nRunning First Process\n");
                     printDEBUG(runningProcessPTR);
                 }
                 // RECIEVED::CASE 2
                 else if(runningProcessPTR!=NULL)
                 {
-                    printf("\nNOT NULLL @%d\n", getClk());
                     // SRTN Case
                     //Update Current Running Process remaining time
                     if(insertionFactor==SRTN)
@@ -200,14 +192,11 @@ int main(int argc, char * argv[])
                     }
                     if(insertionFactor==SRTN && runningProcessPTR->remainingTime>receivedProcess.remainingTime)
                     {
-                        printf("\nREMAINING TIME OF RUNNINIGPROCESS PTR = %d\n", runningProcessPTR->remainingTime);
-                        printf("\nNO SRTN\n");
                         // TODO: replace runningProcess with receivedProcess
                         // [1]: stop runningProcess
                         strcpy(runningProcessPTR->state, "stopped");
                         kill(runningProcessPTR->pID, SIGSTOP);
                         runningProcessPTR->remainingTime = runningProcessPTR->remainingTime - (getClk()-startedProcessingTime);
-                        // FIX: 5azo2
                         enqueue(&CPQptr, *runningProcessPTR, insertionFactor);
                         // [2]: Print to LogFile
                         printDEBUG(runningProcessPTR);
@@ -218,25 +207,14 @@ int main(int argc, char * argv[])
                         // [4]: wakeProccess(int runTime, const char* PROCESS_PATH)
                         runningProcessPTR->pID = wakeProccess(runningProcessPTR->runTime);
                         startedProcessingTime = getClk();
-                        printf("\nstartedProcessingTime at !NULL = %d\n", startedProcessingTime);
                         // [5]: Print to LogFile
                         printDEBUG(runningProcessPTR);
                     }
                     else
                     {
                         // Enqueue HPF, SRTN, RR, SJF FCFS Case
-                        printf("\nENQUEUEING\n");
-                        printQueue(&CPQptr);
-                        printf("\nWhat is going to be enqued\n");
-                        printDEBUG(&receivedProcess);
-                        printf("\nWhat is running\n");
-                        printDEBUG(runningProcessPTR);
                         struct process toEnqueueProcess = receivedProcess;
-                        printProcess(&toEnqueueProcess);
                         enqueue(&CPQptr, toEnqueueProcess, insertionFactor);
-                        printf("\nAFTER ENQUIENING\n");
-                        printQueue(&CPQptr);
-                        printProcess(front(&CPQptr));
                     }
                 }
             }
@@ -245,20 +223,13 @@ int main(int argc, char * argv[])
                 // swap
                 if(!isEmpty(&CPQptr))
                 {
-                    printf("\nSWAP STAGE\n");
-                    printQueue(&CPQptr);
-                    printf("\nSTART RR SWAPPING @ %d\n", getClk());
                     strcpy(runningProcessPTR->state, "stopped");
                     kill(runningProcessPTR->pID, SIGSTOP);
                     runningProcessPTR->remainingTime = runningProcessPTR->remainingTime - (getClk()-startedProcessingTime);
-                    printQueue(&CPQptr);
-                    // printProcess(front(&CPQptr));
                     enqueue(&CPQptr, *runningProcessPTR, insertionFactor);
-                    printQueue(&CPQptr);
-                    printProcess(front(&CPQptr));
                     // [2]: Print to LogFile
                     printDEBUG(runningProcessPTR);
-                        // [3]: receivedProcess->state "started"
+                    // [3]: receivedProcess->state "started"
                     runningProcessPTR = dequeue(&CPQptr);
                     if(runningProcessPTR != NULL)
                     {
@@ -276,17 +247,12 @@ int main(int argc, char * argv[])
                         // TODO:
                         // Print to LOG file 
                         startedProcessingTime = getClk();
-                        printf("\nEND RR SWAPPING = %d\n", getClk());
                         printDEBUG(runningProcessPTR);
                     }
                 }
-                else
-                    printf("\nNO Swapping @%d\n", getClk());
                 // Sleeping
-                printf("\nGOING TO SLEEP@%d\n", getClk());
                 sleep(QUANTUM);
-                printf("\nWAKED UP @%d\n", getClk());
-            }    
+            }
         }
     }
     //Delete Queue

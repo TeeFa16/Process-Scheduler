@@ -3,7 +3,6 @@
 int main()
 {
     enum queueInsertionKey insertionFactor = 1;
-
     // 1 2 50 2 
     // 2 5 25 1
     // 3 6 30 0
