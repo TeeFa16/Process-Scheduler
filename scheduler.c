@@ -33,7 +33,7 @@ void printDEBUG(struct process* p)
     {
         return;
     }
-    printf("\nAt\ttime\t%d\tprocess\t%d\t%s\tarr\t%d\tpriority\t%d\tremain\t%d\n", getClk(), p->id, p->state, p->arrivalTime, p->priority, p->remainingTime);
+    printf("\nAt\ttime\t%d\tprocess\t%d\t%s\tarr\t%d\tpriority\t%d\ttotal\t%d\tremain\t%d\n", getClk(), p->id, p->state, p->arrivalTime, p->priority,p->runTime, p->remainingTime);
     // print in log file
     if (!strcmp(p->state, "finished"))
     {
@@ -42,7 +42,7 @@ void printDEBUG(struct process* p)
     }
     else 
     {
-        fprintf(logFile, "\nAt\ttime\t%d\tprocess\t%d\t%s\tarr\t%d\tremain\t%d\twait\t%d\n", getClk(), p->id, p->state, p->arrivalTime, p->remainingTime, p->waitingTime);
+        fprintf(logFile, "\nAt\ttime\t%d\tprocess\t%d\t%s\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n", getClk(), p->id, p->state, p->arrivalTime, p->runTime, p->remainingTime, p->waitingTime);
     }
 }
 
@@ -165,7 +165,7 @@ int main(int argc, char * argv[])
         {
             struct msgbuff receivedProccessMSG;
             int rec_val;
-            if (insertionFactor == RR && !RRFirstTime)
+            if (insertionFactor == RR && !RRFirstTime && runningProcessPTR != NULL)
                 rec_val = msgrcv(receivingQueueID, &receivedProccessMSG, sizeof(struct process), 7, IPC_NOWAIT);
             else
             {
