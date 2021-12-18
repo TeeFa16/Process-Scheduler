@@ -91,6 +91,8 @@ struct process
     int remainingTime;
     int waitingTime;
     int finishedTime;
+    int turnAround;
+    float weightedTurnAround;
 };
 
 struct msgbuff
@@ -239,14 +241,17 @@ void enqueue(struct customPriorityQueue **q, struct process pObj, enum queueInse
             (*q)->count++;
             break;
         case RR:
-            if (((*q)->head)->p->arrivalTime > pObj.arrivalTime)
+            ; 
+            // RR append last   
+            const int APPEND_LAST = 0;
+            if (APPEND_LAST > APPEND_LAST)
             {
                 temp->next = ((*q)->head);
                 ((*q)->head) = temp;
             }
             else
             {
-                while (start->next != NULL && start->next->p->arrivalTime <= pObj.arrivalTime)
+                while (start->next != NULL && APPEND_LAST <= APPEND_LAST)
                 {
                     start = start->next;
                 }

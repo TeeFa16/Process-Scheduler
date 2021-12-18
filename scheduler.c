@@ -10,6 +10,12 @@
 // 3	80	30	0
 // 4	90	25	3
 // 5	100	30	4
+// #id arrival runtime priority
+// 1	10	50	2
+// 2	30	20	1
+// 3	80	30	0
+// 4	90	25	3
+// 5	95	30	4
 
 enum queueInsertionKey insertionFactor;
 struct customPriorityQueue* CPQptr = NULL;
@@ -19,6 +25,7 @@ const char* PROCESS_PATH = NULL;
 struct process runningProcess;
 int startedProcessingTime = 0;
 int QUANTUM;
+FILE* logFile;
 
 void printDEBUG(struct process* p)
 {
@@ -27,6 +34,16 @@ void printDEBUG(struct process* p)
         return;
     }
     printf("\nAt\ttime\t%d\tprocess\t%d\t%s\tarr\t%d\tpriority\t%d\tremain\t%d\n", getClk(), p->id, p->state, p->arrivalTime, p->priority, p->remainingTime);
+    // print in log file
+    if (!strcmp(p->state, "finished"))
+    {
+        printf("\nTA = %d and WTA = %f\n", p->turnAround, p->weightedTurnAround);
+        fprintf(logFile, "\nAt\ttime\t%d\tprocess\t%d\t%s\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\tTA\t%d\tWTA\t%.2f\n", getClk(), p->id, p->state, p->arrivalTime, p->runTime, p->remainingTime, p->waitingTime, p->turnAround, p->weightedTurnAround);
+    }
+    else 
+    {
+        fprintf(logFile, "\nAt\ttime\t%d\tprocess\t%d\t%s\tarr\t%d\tremain\t%d\twait\t%d\n", getClk(), p->id, p->state, p->arrivalTime, p->remainingTime, p->waitingTime);
+    }
 }
 
 int wakeProccess(int runTime)
@@ -57,6 +74,8 @@ void sigChildHandler(int signum)
     runningProcessPTR->remainingTime = runningProcessPTR->remainingTime - (getClk()-startedProcessingTime);
     runningProcessPTR->finishedTime = getClk();
     runningProcessPTR->waitingTime = runningProcessPTR->finishedTime - runningProcessPTR->arrivalTime - runningProcessPTR->runTime;
+    runningProcessPTR->turnAround = runningProcessPTR->finishedTime - runningProcessPTR->arrivalTime;
+    runningProcessPTR->weightedTurnAround = (float)runningProcessPTR->turnAround / runningProcessPTR->runTime;
     printf("\nFINISHED LOG\n");
     printProcess(runningProcessPTR);
     // TODO: store for analytics
@@ -71,6 +90,7 @@ void sigChildHandler(int signum)
     if(!strcmp(runningProcessPTR->state, "ready"))
     {
         strcpy(runningProcessPTR->state, "started");
+        runningProcessPTR->waitingTime = getClk() - runningProcessPTR->arrivalTime;
         runningProcessPTR->pID = wakeProccess(runningProcessPTR->runTime);
     }
     else
@@ -89,6 +109,9 @@ void sigChildHandler(int signum)
 
 int main(int argc, char * argv[])
 {
+    // open log file
+    logFile = fopen("scheduler.log","a");
+    fprintf(logFile, "\nAt\ttime\tx\tprocess\ty\tstate\tarr\tw\ttotal\tz\tremain\ty\twait\tk\n");
     signal(SIGUSR1, schedularHandler);
     struct sigaction action;
     action.sa_handler = sigChildHandler;
@@ -154,8 +177,6 @@ int main(int argc, char * argv[])
                 // intialize process struct
                 struct process receivedProcess = receivedProccessMSG.p;
                 strcpy(receivedProcess.state, "ready");
-                if (insertionFactor == RR)
-                    receivedProcess.arrivalTime = 0;
                 receivedProcess.waitingTime = 0;
                 receivedProcess.remainingTime = receivedProcess.runTime;
                 printDEBUG(&receivedProcess);
@@ -174,9 +195,9 @@ int main(int argc, char * argv[])
                     runningProcess = receivedProcess;
                     runningProcessPTR = &runningProcess;
                     strcpy(runningProcessPTR->state, "started");
+                    receivedProcess.waitingTime = getClk() - receivedProcess.arrivalTime;
                     runningProcessPTR->pID = wakeProccess(runningProcessPTR->runTime);
                     startedProcessingTime = getClk();
-
                     // Print to LOG file
                     printDEBUG(runningProcessPTR);
                 }
@@ -204,6 +225,7 @@ int main(int argc, char * argv[])
                         runningProcess = receivedProcess;
                         runningProcessPTR = &runningProcess;
                         strcpy(runningProcessPTR->state, "started");
+                        runningProcessPTR->waitingTime = getClk() - runningProcessPTR->arrivalTime;
                         // [4]: wakeProccess(int runTime, const char* PROCESS_PATH)
                         runningProcessPTR->pID = wakeProccess(runningProcessPTR->runTime);
                         startedProcessingTime = getClk();
@@ -238,10 +260,12 @@ int main(int argc, char * argv[])
                         {
                             strcpy(runningProcessPTR->state, "started");
                             runningProcessPTR->pID = wakeProccess(runningProcessPTR->runTime);
+                            runningProcessPTR->waitingTime = getClk() - runningProcessPTR->arrivalTime;
                         }
                         else
                         {
                             strcpy(runningProcessPTR->state, "resumed");
+                            runningProcessPTR->waitingTime = getClk() - runningProcessPTR->arrivalTime - (runningProcessPTR->runTime - runningProcessPTR->remainingTime);
                             kill(runningProcessPTR->pID, SIGCONT);
                         }
                         // TODO:
@@ -259,6 +283,9 @@ int main(int argc, char * argv[])
     msgctl(receivingQueueID, IPC_RMID, NULL);
     printf("\nFinshed Schedular\n");
     
+    //close log file
+    fclose(logFile);
+
     destroyClk(false);
     exit(0);
 }
