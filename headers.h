@@ -9,6 +9,7 @@
 #include <sys/wait.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <math.h>
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
@@ -130,7 +131,8 @@ struct node* newNode(struct process pObj)
     newProcess->priority = pObj.priority;
     newProcess->remainingTime = pObj.remainingTime;
     newProcess->waitingTime = pObj.waitingTime;
-    
+    newProcess->weightedTurnAround = pObj.weightedTurnAround;
+    newProcess->turnAround = pObj.turnAround;
     temp->p = newProcess;
     temp->next = NULL;
     return temp;
@@ -191,6 +193,8 @@ void printProcess(struct process* p)
    printf("remaining time is: %d\n", p->remainingTime);
    printf("finish time is: %d\n", p->finishedTime);
    printf("Waiting time is: %d\n", p->waitingTime);
+   printf("TA is: %d\n", p->turnAround);
+   printf("WTA is: %f\n", p->weightedTurnAround);
 }
 
 void enqueue(struct customPriorityQueue **q, struct process pObj, enum queueInsertionKey i)

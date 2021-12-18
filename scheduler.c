@@ -19,6 +19,7 @@
 
 enum queueInsertionKey insertionFactor;
 struct customPriorityQueue* CPQptr = NULL;
+struct customPriorityQueue* AnalysisQptr = NULL;
 struct process* runningProcessPTR = NULL;
 bool stillSending = true;
 const char* PROCESS_PATH = NULL;
@@ -26,6 +27,7 @@ struct process runningProcess;
 int startedProcessingTime = 0;
 int QUANTUM;
 FILE* logFile;
+FILE* perfFile;
 
 void printDEBUG(struct process* p)
 {
@@ -62,7 +64,7 @@ int wakeProccess(int runTime)
     }
     return PROCESS_PID;
 }
-
+ 
 void schedularHandler(int signum)
 {
     stillSending = false;
@@ -76,6 +78,9 @@ void sigChildHandler(int signum)
     runningProcessPTR->waitingTime = runningProcessPTR->finishedTime - runningProcessPTR->arrivalTime - runningProcessPTR->runTime;
     runningProcessPTR->turnAround = runningProcessPTR->finishedTime - runningProcessPTR->arrivalTime;
     runningProcessPTR->weightedTurnAround = (float)runningProcessPTR->turnAround / runningProcessPTR->runTime;
+    printf("\nFINISHED INTIALIZATION\n");
+    printProcess(runningProcessPTR);
+    enqueue(&AnalysisQptr, *runningProcessPTR, RR);
     printf("\nFINISHED LOG\n");
     printProcess(runningProcessPTR);
     // TODO: store for analytics
@@ -109,6 +114,7 @@ void sigChildHandler(int signum)
 
 int main(int argc, char * argv[])
 {
+    AnalysisQptr = newCustomPriorityQueue(); 
     // open log file
     logFile = fopen("scheduler.log","a");
     fprintf(logFile, "\nAt\ttime\tx\tprocess\ty\tstate\tarr\tw\ttotal\tz\tremain\ty\twait\tk\n");
@@ -279,12 +285,50 @@ int main(int argc, char * argv[])
             }
         }
     }
+    printQueue(&AnalysisQptr);
+    float cpuUtilization=0;
+    float avgWaiting=0;
+    int sumWaiting=0;
+    float avgWTA=0, sumWTA=0;
+    float stdWTA=0;
+    float sumDeviation=0;
+    int count = AnalysisQptr->count;
+    for(int i=0; i<count; i++)
+    {
+        struct process* analysisProcessPTR = dequeue(&AnalysisQptr);
+        printf("\nPID=%d , WTA = %f\n", analysisProcessPTR->id, analysisProcessPTR->weightedTurnAround);
+        sumWaiting += analysisProcessPTR->waitingTime;
+        sumWTA += analysisProcessPTR->weightedTurnAround;
+        enqueue(&AnalysisQptr, *analysisProcessPTR, RR);
+    }
+    printQueue(&AnalysisQptr);
+    printf("\nSumWTA = %f\n", sumWTA);
+    avgWaiting = (float)sumWaiting/count;
+    avgWTA =(float) sumWTA/count;
+    for(int i=0; i<count; i++)
+    {
+        // calculate std_WTA
+        struct process* analysisProcessPTR = dequeue(&AnalysisQptr);
+        printf("\nPID=%d\n", analysisProcessPTR->id);
+        sumDeviation += ((analysisProcessPTR->weightedTurnAround - avgWTA) * (analysisProcessPTR->weightedTurnAround - avgWTA));
+        enqueue(&AnalysisQptr, *analysisProcessPTR, RR);
+    }
+    stdWTA = (float)sqrt((double)sumDeviation / count);
+
+    printf("\nStandard deviation = %f and Avg WTA = %f and Avg Waiting = %f\n", stdWTA, avgWTA, avgWaiting);
     //Delete Queue
     msgctl(receivingQueueID, IPC_RMID, NULL);
     printf("\nFinshed Schedular\n");
     
     //close log file
     fclose(logFile);
+
+    //Open Schedular.perf
+    float inputWait = 0;
+    cpuUtilization = (1-pow(inputWait,count)) * 100;
+    perfFile = fopen("scheduler.perf","w");
+    fprintf(perfFile, "\nCPU utilization = %f\n\nAvg WTA = %f\n\nAvg Waiting = %f\n\nStd WTA = %f\n",cpuUtilization,avgWTA,avgWaiting, stdWTA);
+    fclose(perfFile);
 
     destroyClk(false);
     exit(0);
