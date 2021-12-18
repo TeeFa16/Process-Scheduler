@@ -301,19 +301,6 @@ void enqueue(struct customPriorityQueue **q, struct process pObj, enum queueInse
     }
 }
 
-void incrementWaintingTime(struct customPriorityQueue** q)
-{
-    if (isEmpty(q))
-        return;
-    struct node* tempPTR = ((*q)->head);
-    tempPTR->p->waitingTime++;
-    while (tempPTR->next != NULL)
-    {
-        tempPTR->next->p->waitingTime++;
-        tempPTR = tempPTR->next;
-    }
-}
-
 // utilities
 void printList(struct process inputProccesses[], int inputProccessesCount)
 {
